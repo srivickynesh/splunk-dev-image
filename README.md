@@ -19,10 +19,6 @@ This README provides an overview and steps to build a Splunk image, run it in a 
 
 2. Execution
     To execute the script, run:
+        ```
         ./run_splunk_container.sh
-
-## Troubleshooting
-
-1. Timeout reached while waiting for Splunk: Ensure that your Splunk container has sufficient resources and there are no errors during its startup.
-
-2. Curl command failed: Ensure that Splunk's HEC endpoint is accessible and the provided HEC tokens are correct.
+        ```

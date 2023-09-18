@@ -54,6 +54,31 @@ wait_for_splunk() {
       || echo "Timeout reached while waiting for Splunk to come up"
 }
 
+send_event_to_splunk() {
+    local HEC_EP="$1"
+    local HEC_TOKEN="$2"
+
+    response=$(curl -k -s "$HEC_EP/services/collector/event" \
+             -H "Authorization: Splunk $HEC_TOKEN" \
+             -d '{"event": "Hello, World!"}')
+
+    if [ $? -ne 0 ]; then
+        echo "Curl command failed with $response"
+        return 1
+    fi
+
+    success_code=$(echo "$response" | jq -r '.code')
+
+    if [ "$success_code" == "0" ]; then
+        echo "Event sent successfully!"
+    else
+        echo "Failed to send event. Response was: $response"
+        return 1
+    fi
+}
+
 build_image
 run_image
 wait_for_splunk
+send_event_to_splunk $HEC_ENDPOINT $HEC_TOKEN_DEV_APP
+send_event_to_splunk $HEC_ENDPOINT $HEC_TOKEN_DEV_AUDIT
