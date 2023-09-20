@@ -1,0 +1,154 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: splunk
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: splunk-sa
+  namespace: splunk
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: splunk
+  name: splunk-role
+rules:
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  resourceNames:
+  - anyuid
+  verbs:
+  - use
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: splunk-rolebinding
+  namespace: splunk
+subjects:
+- kind: ServiceAccount
+  name: splunk-sa
+  namespace: splunk
+roleRef:
+  kind: Role
+  name: splunk-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: splunk-db-pvc
+  namespace: splunk
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi 
+---
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: splunk
+  namespace: splunk
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: splunk
+    spec:
+      serviceAccountName: splunk-sa
+      containers:
+      - name: splunk
+        image: quay.io/srivickynesh/splunk-dev-image:splunk-dev-bundle
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: "500m"
+          limits:
+            cpu: "1"
+        env:
+        - name: SPLUNK_PASSWORD
+          value: "Password"
+        - name: SPLUNK_START_ARGS
+          value: "--accept-license"
+        ports:
+        - containerPort: 8000 # WEB
+        - containerPort: 8089 # API
+        - containerPort: 8088 # HEC
+        volumeMounts:
+        - name: splunk-db-volume
+          mountPath: /opt/splunk/var/lib/splunk/
+      volumes:
+      - name: splunk-db-volume
+        persistentVolumeClaim:
+          claimName: splunk-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: splunk
+  namespace: splunk
+spec:
+  selector:
+    app: splunk
+  ports:
+    - name: web
+      port: 8000
+    - name: api
+      port: 8089
+    - name: hec
+      port: 8088
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: splunk-web
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  to:
+    kind: Service
+    name: splunk
+  port:
+    targetPort: 8000
+  wildcardPolicy: None
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: splunk-api
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  to:
+    kind: Service
+    name: splunk
+  port:
+    targetPort: 8089
+  wildcardPolicy: None
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: splunk-hec
+  namespace: splunk
+  labels:
+    app: splunk
+spec:
+  to:
+    kind: Service
+    name: splunk
+  port:
+    targetPort: 8088
+  wildcardPolicy: None
+
