@@ -20,5 +20,5 @@ This README provides an overview and steps to build a Splunk image, run it in a 
 2. Execution
     To execute the script, run:
         ```
-        ./run_splunk_container.sh
+        ./scripts/run_splunk_container.sh
         ```
