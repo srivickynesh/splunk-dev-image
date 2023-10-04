@@ -4,8 +4,7 @@ FROM docker.io/splunk/splunk:${SPLUNK_VERSION} AS builder
 COPY --chmod=777 conf/ /opt/splunk/etc/apps/search/local/
 COPY --chmod=755 scripts/splunk.sh /opt/splunk/splunk.sh
 USER root
-RUN umask 000 && touch "/opt/splunk/output.log" && \
-    chmod -R 777 /opt/container_artifact/
+RUN umask 000 && touch "/opt/splunk/output.log"
 USER ansible
 RUN bash -o errexit /opt/splunk/splunk.sh
 
